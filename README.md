@@ -2,7 +2,7 @@
 ## Automated Pharmacovigilance Using Statistical Analysis
 
 **Project by:** Harshal Gosavi  
-**Date:** October 2024  
+**Date:** October 2025 
 **Status:** ✅ Complete
 
 ---
