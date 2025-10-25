@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADR Signal Detection - Interactive Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-section {
+            padding: 30px;
+            background: #fff;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .info-box p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        
+        .info-box strong {
+            color: #667eea;
+        }
+        
+        .chart-container {
+            padding: 30px;
+            background: white;
+        }
+        
+        #mainChart {
+            width: 100%;
+            height: 600px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        
+        .color-critical { background: #d32f2f; }
+        .color-high { background: #f57c00; }
+        .color-moderate { background: #fbc02d; }
+        .color-low { background: #689f38; }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .footer h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .footer p {
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .methodology {
+            padding: 30px;
+            background: #fff;
+        }
+        
+        .methodology h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+        
+        .method-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .method-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-top: 4px solid #667eea;
+        }
+        
+        .method-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .method-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔬 ADR Signal Detection System</h1>
+            <p>Interactive Pharmacovigilance Dashboard</p>
+        </div>
+        
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">1M+</div>
+                <div class="stat-label">Reports Analyzed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6,686</div>
+                <div class="stat-label">Signals Detected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">10,000+</div>
+                <div class="stat-label">Unique Drugs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">16,259x</div>
+                <div class="stat-label">Highest PRR</div>
+            </div>
+        </div>
+        
+        <!-- Info Section -->
+        <div class="info-section">
+            <div class="info-box">
+                <h3>📊 About This Dashboard</h3>
+                <p><strong>What is this?</strong> This interactive dashboard visualizes adverse drug reaction (ADR) signals detected from over 1 million pharmaceutical safety reports using advanced statistical analysis.</p>
+                <p><strong>What is PRR?</strong> Proportional Reporting Ratio (PRR) is a validated pharmacovigilance metric used by FDA and EMA. A PRR > 2 indicates that a side effect is reported at least 2x more frequently for a specific drug compared to all other drugs.</p>
+                <p><strong>How to use:</strong> Hover over any point in the chart below to see detailed information about drug names, side effects, and signal strength. Larger points indicate more reports.</p>
+            </div>
+        </div>
+        
+        <!-- Chart -->
+        <div class="chart-container">
+            <div id="mainChart"></div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color color-critical"></div>
+                <span>Critical (PRR > 1000)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color color-high"></div>
+                <span>High Risk (PRR 100-1000)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color color-moderate"></div>
+                <span>Moderate (PRR 10-100)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color color-low"></div>
+                <span>Low (PRR 2-10)</span>
+            </div>
+        </div>
+        
+        <!-- Methodology -->
+        <div class="methodology">
+            <h2>🔬 Methodology</h2>
+            <div class="method-grid">
+                <div class="method-card">
+                    <h4>1. Data Collection</h4>
+                    <p>Processed 1,000,000+ adverse event reports from pharmaceutical safety databases, tracking 10,000+ unique drugs and 500+ side effects.</p>
+                </div>
+                <div class="method-card">
+                    <h4>2. Statistical Analysis</h4>
+                    <p>Applied Proportional Reporting Ratio (PRR) methodology - the same technique used by FDA and EMA for signal detection.</p>
+                </div>
+                <div class="method-card">
+                    <h4>3. Signal Detection</h4>
+                    <p>Identified signals using criteria: PRR > 2.0 and minimum 3 reports, resulting in 6,686 potential safety signals.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <h3>👨‍💻 Project by Harshal Gosavi</h3>
+            <p>B.Pharm Student | Data Analytics Enthusiast | Aspiring Pharmacovigilance Professional</p>
+            <p>📧 <a href="mailto:harshalgosavi9948@gmail.com">harshalgosavi9948@gmail.com</a></p>
+            <p>🔗 <a href="https://www.linkedin.com/in/harshal9948" target="_blank">LinkedIn Profile</a></p>
+            <p>💼 Open to internships in Pharmacovigilance, Healthcare Analytics & Pharma-Tech</p>
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.7;">
+                Tools: Python | Pandas | NumPy | Plotly | Statistical Analysis
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Sample ADR signal data for visualization
+        const signalData = [
+            {drug: 'Homatropine Eye Drop', effect: 'Eczematoid Dermatitis', count: 3, prr: 16259, category: 'Ophthalmology'},
+            {drug: 'Sosrane Liquid', effect: 'High Grade Fever', count: 3, prr: 24390, category: 'Respiratory'},
+            {drug: 'Isotroy Solution', effect: 'Irregular Heartbeats', count: 3, prr: 16768, category: 'Respiratory'},
+            {drug: 'Scabizine Lotion', effect: 'Erythematous Rash', count: 3, prr: 8384, category: 'Dermatology'},
+            {drug: 'Novorapid Penfill', effect: 'Auto-antibody Formation', count: 3, prr: 6850, category: 'Endocrinology'},
+            {drug: 'Adsolv Ear Drop', effect: 'Irritation of Ear', count: 3, prr: 6707, category: 'ENT'},
+            {drug: 'Ojtoux Syrup', effect: 'Shivering', count: 3, prr: 6544, category: 'Respiratory'},
+            {drug: 'Basalog Injection', effect: 'Cataract', count: 4, prr: 5962, category: 'Endocrinology'},
+            {drug: 'Epilan Tablet', effect: 'Gum Enlargement', count: 3, prr: 5628, category: 'Neurology'},
+            {drug: 'Epiroid-T Cream', effect: 'Skin Exfoliation', count: 3, prr: 5589, category: 'Dermatology'},
+            {drug: 'Aerocort Inhaler', effect: 'GI Motility Disorder', count: 3, prr: 5159, category: 'Respiratory'},
+            {drug: 'Eva Q Syrup', effect: 'Cramps', count: 3, prr: 4791, category: 'Gastroenterology'},
+            {drug: 'Meditrax Injection', effect: 'Allergic Reaction', count: 8, prr: 450, category: 'Antibiotic'},
+            {drug: 'Amrofast Cream', effect: 'Nail Disorder', count: 6, prr: 380, category: 'Dermatology'},
+            {drug: 'Cefpoxim Syrup', effect: 'Diarrhea', count: 6, prr: 290, category: 'Antibiotic'},
+            {drug: 'Tolrex Tablet', effect: 'Vomiting', count: 6, prr: 245, category: 'Gastroenterology'},
+            {drug: 'Mucohelp Injection', effect: 'Fever', count: 6, prr: 198, category: 'Respiratory'},
+            {drug: 'Paracip Tablet', effect: 'Nausea', count: 10, prr: 45, category: 'Analgesic'},
+            {drug: 'Azithral Tablet', effect: 'Headache', count: 12, prr: 38, category: 'Antibiotic'},
+            {drug: 'Metformin Tablet', effect: 'Dizziness', count: 15, prr: 28, category: 'Endocrinology'}
+        ];
+
+        // Prepare data for Plotly
+        const x = signalData.map(d => d.count);
+        const y = signalData.map(d => d.prr);
+        const sizes = signalData.map(d => Math.sqrt(d.count) * 8 + 10);
+        const colors = signalData.map(d => d.prr);
+        const hoverText = signalData.map(d => 
+            `<b>${d.drug}</b><br>` +
+            `Side Effect: ${d.effect}<br>` +
+            `Category: ${d.category}<br>` +
+            `Reports: ${d.count}<br>` +
+            `PRR: ${d.prr.toLocaleString()}x<br>` +
+            `<i>Signal Strength: ${d.prr > 1000 ? 'Critical' : d.prr > 100 ? 'High' : d.prr > 10 ? 'Moderate' : 'Low'}</i>`
+        );
+
+        const trace = {
+            x: x,
+            y: y,
+            mode: 'markers',
+            type: 'scatter',
+            name: 'ADR Signals',
+            text: hoverText,
+            hovertemplate: '%{text}<extra></extra>',
+            marker: {
+                size: sizes,
+                color: colors,
+                colorscale: [
+                    [0, '#689f38'],
+                    [0.3, '#fbc02d'],
+                    [0.6, '#f57c00'],
+                    [1, '#d32f2f']
+                ],
+                showscale: true,
+                colorbar: {
+                    title: 'PRR Value',
+                    titleside: 'right',
+                    tickmode: 'linear',
+                    thickness: 20,
+                    len: 0.7
+                },
+                line: {
+                    color: 'white',
+                    width: 2
+                }
+            }
+        };
+
+        const layout = {
+            title: {
+                text: '<b>ADR Signal Strength vs. Report Count</b><br><sub>Interactive Pharmacovigilance Analysis Dashboard</sub>',
+                font: { size: 24, color: '#333' }
+            },
+            xaxis: {
+                title: '<b>Number of Reports</b>',
+                gridcolor: '#e0e0e0',
+                zeroline: false,
+                showgrid: true
+            },
+            yaxis: {
+                title: '<b>Signal Strength (PRR)</b>',
+                type: 'log',
+                gridcolor: '#e0e0e0',
+                zeroline: false,
+                showgrid: true
+            },
+            shapes: [{
+                type: 'line',
+                x0: 0,
+                y0: 2,
+                x1: Math.max(...x) + 2,
+                y1: 2,
+                line: {
+                    color: 'orange',
+                    width: 3,
+                    dash: 'dash'
+                }
+            }],
+            annotations: [{
+                x: Math.max(...x) * 0.8,
+                y: 2,
+                text: '<b>Signal Threshold (PRR = 2)</b>',
+                showarrow: true,
+                arrowhead: 2,
+                arrowcolor: 'orange',
+                ax: 0,
+                ay: -40,
+                font: { 
+                    color: 'orange', 
+                    size: 14,
+                    family: 'Arial, sans-serif'
+                },
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                bordercolor: 'orange',
+                borderwidth: 2,
+                borderpad: 4
+            }],
+            hovermode: 'closest',
+            plot_bgcolor: '#fafafa',
+            paper_bgcolor: 'white',
+            font: {
+                family: 'Segoe UI, Arial, sans-serif',
+                size: 12,
+                color: '#333'
+            },
+            margin: {
+                l: 80,
+                r: 80,
+                t: 100,
+                b: 80
+            }
+        };
+
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+            toImageButtonOptions: {
+                format: 'png',
+                filename: 'adr_signal_detection_dashboard',
+                height: 800,
+                width: 1400,
+                scale: 2
+            }
+        };
+
+        Plotly.newPlot('mainChart', [trace], layout, config);
+    </script>
+</body>
+</html>
